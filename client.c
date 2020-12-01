@@ -12,7 +12,7 @@
 
 void* send_msg(void* arg);
 void* recv_msg(void* arg);
-
+int poker();
 void menu();
 
 char name[SIZE] = "[USER]";
