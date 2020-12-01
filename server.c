@@ -23,6 +23,7 @@ void menu(char port[]);
 int clnt_cnt = 0;
 int clnt_socks[MAX_CLNT];
 char msg[BUFSIZE];
+char name[SIZE] = "[SERVER]";
 pthread_mutex_t mutx;
 
 
@@ -68,9 +69,6 @@ int main(int argc, char *argv[]) {
 		
 		pthread_create(&snd_thread, NULL, send_clnt, (void*)&clnt_sock);
 		pthread_create(&t_id, NULL, handle_clnt, (void*)&clnt_sock);
-		pthread_create(&rcv_thread, NULL, recv_msg, (void*)&clnt_sock);
-		pthread_join(rcv_thread, &thread_return);
-		pthread_join(snd_thread, &thread_return);
 		pthread_detach(t_id);
 		printf(" Connected client IP : %s ", inet_ntoa(clnt_adr.sin_addr));
 		printf(" chatter (%d/100)\n", clnt_cnt);
@@ -143,11 +141,12 @@ void* recv_msg(void* arg) {
 void* send_clnt(){
 
 	int i;
+	char name_msg[SIZE+BUFSIZE];
 	while(1) {
 		fgets(msg, BUFSIZE, stdin);
-
+		sprintf(name_msg, "%s %s", name, msg);
 		for(i = 0;i< clnt_cnt;i++)
-		write(clnt_socks[i], msg, strlen(msg));
+		write(clnt_socks[i],name_msg, strlen(name_msg));
 	}
 	return NULL;
 }
