@@ -508,7 +508,14 @@ void royal_straight_flush(int k){
 			result_p2=9;
 	}
 }
-
+void chatting(){
+	int i;
+	char* msg = "\nTalk in 1 minute..\n";
+	for(i=0;i<clnt_cnt;i++) {
+		write(clnt_socks[i], msg, strlen(msg));
+	}
+	sleep(60);
+}
 int poker(void){
 	int i,suit_num1,suit_num2;
 	srand(time(NULL));
@@ -575,6 +582,7 @@ int poker(void){
 		strcat(msg, suit);
 		write(clnt_socks[1], msg, strlen(msg));
 		printf("\n");
+		chatting();
 		//getchar();
 	}
 	printf("\n");
