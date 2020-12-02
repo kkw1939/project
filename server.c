@@ -508,14 +508,288 @@ void royal_straight_flush(int k){
 			result_p2=9;
 	}
 }
+
 void chatting(){
 	int i;
 	char* msg = "\nTalk in 1 minute..\n";
 	for(i=0;i<clnt_cnt;i++) {
 		write(clnt_socks[i], msg, strlen(msg));
 	}
-	sleep(60);
+//	sleep(60);
 }
+int poker(void){
+	int i,suit_num1,suit_num2;
+	srand(time(NULL));
+	//make card deck
+
+	for(i=0;i<13;i++){
+		cards[i].value=i%13+1;
+		cards[i].suit='c';
+	}	
+	for(i=0;i<13;i++){
+		cards[i+13].value=i%13+1;
+		cards[i+13].suit='d';
+	}
+
+	for(i=0;i<13;i++){
+		cards[i+26].value=i%13+1;
+		cards[i+26].suit='h';
+	}
+
+	for(i=0;i<13;i++){
+		cards[i+39].value=i%13+1;
+		cards[i+39].suit='s';
+	}
+
+	//give first personal card
+	give_card(1,0);
+	give_card(2,0);
+
+	//give first personal card
+	give_card(1,1);
+	give_card(2,1);
+
+	//open common card
+	for(i=0;i<5;i++){
+		give_card(3,i);
+	}
+
+	//check card
+	for(i=1;i<3;i++){
+		sort(i);
+		one_pair(i);
+		two_pair(i);
+		triple(i);
+		straight(i);
+		flush(i);
+		full_house(i);
+		four_card(i);
+		straight_flush(i);
+		royal_straight_flush(i);
+	}
+	for(i=0;i<7;i++){
+	       	char msg[BUFSIZ];
+		char suit[BUFSIZ];
+		sprintf(msg, "%d", player1[i].value);
+		sprintf(suit, "%c", player1[i].suit);
+		strcat(msg, suit);	
+		printf("player1 : %d%c ",player1[i].value,player1[i].suit);
+		write(clnt_socks[0], msg, strlen(msg)); 
+		
+		printf("player2 : %d%c ",player2[i].value,player2[i].suit);
+		sprintf(msg, "%d", player2[i].value);
+		sprintf(suit, "%c", player2[i].suit);
+		strcat(msg, suit);
+		write(clnt_socks[1], msg, strlen(msg));
+		printf("\n");
+		chatting();
+		//getchar();
+	}
+	printf("\n");
+	/*for(i=0;i<7;i++){
+		printf("%d%c ",player1[i].value,player1[i].suit);
+	}
+	printf("\n");
+	for(i=0;i<7;i++){
+		printf("%d%c ",player2[i].value,player2[i].suit);
+	}
+	printf("\n");
+*/
+	switch(result_p1){
+	case 0 : printf("player1 : %d high card\n",num1);
+		break;
+	case 1 : printf("player1 : %d one pair\n",num1); 
+		break;
+	case 2 : printf("player1 : %d two pair\n",num1);
+		break;
+	case 3 : printf("player1 : %d triple\n",num1);
+		break;
+	case 4 : printf("player1 : %d straight\n",num1);
+		break;
+	case 5 : printf("player1 : %c flush\n",suit1);
+		break;
+	case 6 : printf("player1 : %c full house\n",suit1);
+		break;
+	case 7 : printf("player1 : %c four card\n",suit1);
+		break;
+	case 8 : printf("player1 : %c straight flush\n",suit1);
+		break;
+	case 9 : printf("player1 : %c royal straight flush\n",suit1);
+		break;
+	}
+
+	switch(result_p2){
+	case 0 : printf("player2 : %d high card\n",num2);
+		break;
+	case 1 : printf("player2 : %d one pair\n",num2); 
+		break;
+	case 2 : printf("player2 : %d two pair\n",num2);
+		break;
+	case 3 : printf("player2 : %d triple\n",num2);
+		break;
+	case 4 : printf("player2 : %d straight\n",num2);
+		break;
+	case 5 : printf("player2 : %c flush\n",suit2);
+		break;
+	case 6 : printf("player2 : %c full house\n",suit2);
+		break;
+	case 7 : printf("player2 : %c four card\n",suit2);
+		break;
+	case 8 : printf("player2 : %c straight flush\n",suit2);
+		break;
+	case 9 : printf("player2 : %c royal straight flush\n",suit2);
+		break;
+	}
+
+	if(result_p1>result_p2){
+		printf("player1 win!\n");
+	}
+	else if(result_p1<result_p2){
+		printf("player2 win!\n");
+	}
+	else{
+		//if high card
+		if(result_p1==0){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else {
+				num1 = player1[5].value;
+				num2 = player1[2].value;
+				if(num1>num2)
+					printf("player1 win\n");
+				else if(num1<num2)
+					printf("player2 win\n");
+				else{
+					suit_num1 = check_suit(suit1);
+					suit_num2 = check_suit(suit2);
+					if(suit_num1>suit_num2)
+						printf("player1 win\n");
+					else 
+						printf("player2 win\n");
+				}
+			}
+		}
+		//if one pair
+		else if(result_p1==1){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else {
+				suit_num1 = check_suit(suit1);
+				suit_num2 = check_suit(suit2);
+				if(suit_num1>suit_num2)
+					printf("player1 win\n");
+				else 
+					printf("player2 win\n");
+			}
+		}
+		//if two pair
+		else if(result_p1==2){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else {
+				suit_num1 = check_suit(suit1);
+				suit_num2 = check_suit(suit2);
+				if(suit_num1>suit_num2)
+					printf("player1 win\n");
+				else 
+					printf("player2 win\n");
+			}
+		}
+		//if triple
+		else if(result_p1==3){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else {
+				suit_num1 = check_suit(suit1);
+				suit_num2 = check_suit(suit2);
+				if(suit_num1>suit_num2)
+					printf("player1 win\n");
+				else 
+					printf("player2 win\n");
+			}
+		}
+
+		//if straight
+		else if(result_p1==4){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else{
+				suit_num1 = check_suit(suit1);
+				suit_num2 = check_suit(suit2);
+				if(suit_num1>suit_num2)
+					printf("player1 win\n");
+				else 
+					printf("player2 win\n");
+			}
+
+		}
+		//if flush
+		else if(result_p1==5){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else{
+				suit_num1 = check_suit(suit1);
+				suit_num2 = check_suit(suit2);
+				if(suit_num1>suit_num2)
+					printf("player1 win\n");
+				else 
+					printf("player2 win\n");
+			}
+		}
+		//if full house
+		else if(result_p1==6){
+			if(num1>num2)
+				printf("player1 win\n");
+			else 
+				printf("player2 win\n");
+		}
+		//if four card
+		else if(result_p1==7){
+			if(num1>num2)
+				printf("player1 win\n");
+			else 
+				printf("player2 win\n");
+		}
+		//if straight_flush
+		else if(result_p1==8){
+			if(num1>num2)
+				printf("player1 win\n");
+			else if(num1<num2)
+				printf("player2 win\n");
+			else{
+				suit_num1 = check_suit(suit1);
+				suit_num2 = check_suit(suit2);
+				if(suit_num1>suit_num2)
+					printf("player1 win\n");
+				else 
+					printf("player2 win\n");
+			}
+		}
+		//if royal straight flush
+		else if(result_p1==9){
+			suit_num1 = check_suit(suit1);
+			suit_num2 = check_suit(suit2);
+			if(suit_num1>suit_num2)
+				printf("player1 win\n");
+			else 
+				printf("player2 win\n");
+		}
+	}
+}
+
+
 int poker(void){
 	int i,suit_num1,suit_num2;
 	srand(time(NULL));
