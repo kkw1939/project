@@ -18,11 +18,11 @@ void *handle_clnt(void *arg);
 void send_msg(char *msg, int len);
 void* recv_msg(void* arg);
 void* send_clnt();
-char *serverState(int count);
 void menu(char port[]);
 int poker();
 void betting();
 char* mktok(char* tok);
+void die(int who);
 
 int clnt_cnt = 0;
 int clnt_socks[MAX_CLNT];
@@ -519,10 +519,13 @@ void royal_straight_flush(int k){
 void chatting(){
 	int i;
 	char* msg = "\nTalk in 1 minute..\n";
+	char* msg2 = "\nTalk time end..\n";
 	for(i=0;i<clnt_cnt;i++) {
 		write(clnt_socks[i], msg, strlen(msg));
 	}
-//	sleep(60);
+	sleep(10); //please activate this with 60!
+	send_msg(msg2, strlen(msg));
+	sleep(1);
 	betting();
 }
 int poker(void){
@@ -576,15 +579,8 @@ int poker(void){
 		royal_straight_flush(i);
 	}
 	printf("\n");
-	/*for(i=0;i<7;i++){
-		printf("%d%c ",player1[i].value,player1[i].suit);
-	}
-	printf("\n");
-	for(i=0;i<7;i++){
-		printf("%d%c ",player2[i].value,player2[i].suit);
-	}
-	printf("\n");
-*/
+
+
 	switch(result_p1){
 	case 0 : printf("player1 : %d high card\n",num1);
 		break;
@@ -825,6 +821,7 @@ void check_personal_card(){
 
 void send_card(){
 	int i;
+	sleep(2);
 	for(i=0;i<5;i++){
                 char msg[BUFSIZ];
                 char suit[BUFSIZ];
@@ -841,7 +838,6 @@ void send_card(){
                 write(clnt_socks[1], msg, strlen(msg));
                 printf("\n");
                 chatting();
-                //getchar();
         }
 	for(i=0;i<2;i++){
 		printf("player1 : %d%c" , player1[i+5].value,player1[i+5].suit);
@@ -849,7 +845,21 @@ void send_card(){
 	}
 
 }
-
+void die(int who) {
+	char* msg;
+	sprintf(msg, "Player %d choose die.\n", who+1);
+	send_msg(msg, strlen(msg));
+	if(money[1] != 10000 && money[2] != 10000) {
+		result();
+	}
+	sprintf(msg, "\n\nGood bye!\n\n");
+	send_msg(msg, strlen(msg));
+	msg = "\0";
+	send_msg(msg, strlen(msg));
+	sleep(1);
+	exit(0);
+	
+}
 void betting() {
 	int i;
 	int betmoney;
@@ -857,9 +867,10 @@ void betting() {
 	srand(time(NULL));
 	int who = rand() % clnt_cnt;
 	char msg1[BUFSIZ], msg[BUFSIZ], msg2[BUFSIZ];
-	char *buf, *input;
+	char *buf, *input, *input2;
 	sprintf(msg, "Player %d betting first.\n Choose betting.\n1.Check 2. Raise 3. Die\n", who+1);
-	send_msg(msg,strlen(msg));
+	send_msg(msg, strlen(msg));
+			
 	read(clnt_socks[who], msg1, BUFSIZ);
 	printf("%s\n", msg1);
 	input = mktok(msg1);
@@ -870,40 +881,39 @@ void betting() {
 		
 		who++;
 		if(who >= clnt_cnt) who = 0;
-		sprintf(msg2, "Now Player %d's turn. 1.Raise 2.Die\n",who+1);
+		sprintf(msg2, "\nNow Player %d's turn. 1.Raise 2.Die\n",who+1);
                 send_msg(msg2, strlen(msg2));
 	
                 read(clnt_socks[who], msg1, BUFSIZ);
-                input = mktok(msg1);
+		input2 = mktok(msg1);
+		printf("player %d's input : %s\n", who+1, input2);
 
-                if(input == "1"){
+                if(!strcmp(input2, "1")){ //raise
                         sprintf(msg2,"Player %d choose Raise.\n",who+1);
                         send_msg(msg2,strlen(msg2));
-
+			sleep(1);	
 			sprintf(msg2, "How much do you want Raise?\n");
                 	write(clnt_socks[who], msg2, strlen(msg));
 
-                read(clnt_socks[who], msg1, BUFSIZ); // bet money receive
-                input = mktok(msg1);
-                betmoney = atoi(input);
-                b_money[who] = betmoney;
-                stackedmoney += betmoney;
-                money[who] -= betmoney;
+             		read(clnt_socks[who], msg1, BUFSIZ); // bet money receive
+                	input = mktok(msg1);
+               	 	betmoney = atoi(input);
+                	b_money[who] = betmoney;
+                	stackedmoney += betmoney;
+                	money[who] -= betmoney;
 
-                sprintf(msg2, "Player %d raise %d won\n",who+1, betmoney);
-                send_msg(msg2, strlen(msg2));
-
+                	sprintf(msg2, "Player %d raise %d won\n",who+1, betmoney);
+                	send_msg(msg2, strlen(msg2));
+		}
                 who++;
                 if(who >= clnt_cnt) who = 0;
                 sprintf(msg2, "Now Player %d's turn. 1.Call 2.Die\n",who+1);
                 send_msg(msg2, strlen(msg2));
-
-                
                 read(clnt_socks[who], msg1, BUFSIZ);
-                input = mktok(msg1);
-		printf("(%s) ",input);
-
-                if(input == "1"){
+		input2 = mktok(msg1);
+		printf("player %d's input : %s\n", who+1, input2);
+        
+		if(!strcmp(input2, "1")){
                         sprintf(msg2,"Player %d choose Call. Next Card open.\n"
                                         ,who+1);
                         send_msg(msg2,strlen(msg2));
@@ -911,20 +921,15 @@ void betting() {
                         money[who] -= betmoney;
 
                 }
-                else if(input == "2"){
+                else if(!strcmp(input2, "2")){
                         sprintf(msg2,"Player %d choose Die.\n",who+1);
                         send_msg(msg2,strlen(msg2));
-                        //die(who);
+                        die(who);
                 }
                 else{
                         sprintf(msg,"Choose 1 or 2\n");
                         write(clnt_socks[who], msg2, strlen(msg));
-                        }
                 }
-
-
-
-
 	}
 	else if(!strcmp(input, "2")) {
 		sprintf(msg2, "Player %d choose raise!!\n",who+1);
@@ -932,7 +937,6 @@ void betting() {
 
 		sprintf(msg2, "How much do you want Raise?\n");
 		write(clnt_socks[who], msg2, strlen(msg));
-		
 		read(clnt_socks[who], msg1, BUFSIZ); // bet money receive
 		input = mktok(msg1);
 		betmoney = atoi(input);
@@ -948,7 +952,6 @@ void betting() {
 		sprintf(msg2, "Now Player %d's turn. 1.Call 2.Die\n",who+1);
 		send_msg(msg2, strlen(msg2));
 		
-		
 		read(clnt_socks[who], msg1, BUFSIZ);
 		input = mktok(msg1);
 		if(input == "1"){
@@ -962,19 +965,19 @@ void betting() {
 		else if(input == "2"){
 			sprintf(msg2,"Player %d choose Die.\n",who+1);
 			send_msg(msg2,strlen(msg2));
-			//die(who);
+			die(who);
 		}
 		else{
 			sprintf(msg,"Choose 1 or 2\n");
 			write(clnt_socks[who], msg2, strlen(msg));
-			}
+		}
 			
 		
 	}
 	else if(!strcmp(input, "3")) {
 		sprintf(msg2, "You choose die ...\n");
 		write(clnt_socks[who], msg2, strlen(msg));
-		//die(who);
+		die(who);
 	}
 
 
@@ -1007,7 +1010,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	for(int i = 0 ; i < 1 ; i++)
+	for(int i = 0 ; i < MAX_CLNT ; i++)
 		money[i] = 10000;
 
 	menu(argv[1]);
@@ -1027,7 +1030,7 @@ int main(int argc, char *argv[]) {
 		printf("listen error");
 		exit(1);
 	}
-
+	
 	while(1) {
 		clnt_adr_sz = sizeof(clnt_adr);
 		clnt_sock = accept(serv_sock, (struct sockaddr*)&clnt_adr, &clnt_adr_sz);
@@ -1039,7 +1042,6 @@ int main(int argc, char *argv[]) {
 		pthread_create(&snd_thread, NULL, send_clnt, (void*)&clnt_sock);
 		pthread_create(&t_id, NULL, handle_clnt, (void*)&clnt_sock);
 		pthread_detach(t_id);
-		printf(" Connected client IP : %s ", inet_ntoa(clnt_adr.sin_addr));
 		printf(" chatter (%d/100)\n", clnt_cnt);
 		if(clnt_cnt == 2) {
 			
@@ -1050,14 +1052,14 @@ int main(int argc, char *argv[]) {
 				send_msg(msg1, strlen(msg1));
 				check_personal_card();
 				send_msg(msg2, strlen(msg2));
+				sleep(10);
 				send_card();
-				char msg3[BUFSIZE]  = "Here's result\n";
+				char msg3[BUFSIZE]  = "\nHere's result\n";
 				send_msg(msg3,strlen(msg3));
 				result();
 				char msg4[BUFSIZE] = "Choose menu 1. Keep playing 2.Quit\n";
 				send_msg(msg4,strlen(msg4));
-			
-		}
+		}	
 	}
 	close(serv_sock);
 	return 0;
@@ -1092,22 +1094,13 @@ void send_msg(char* msg, int len) {
 		write(clnt_socks[i], msg, len);
 	pthread_mutex_unlock(&mutx);
 }
-char* serverState(int count) {
-	char* stateMsg = malloc(sizeof(char) * 20);
-	strcpy(stateMsg, "None");
-
-	if(count < 5) strcpy(stateMsg, "Good");
-	else strcpy(stateMsg, "Bad");
-	return stateMsg;
-}
 
 void menu(char port[]) {
 	system("clear");
-	printf(" chat server \n");
+	printf(" Poker game server \n");
 	printf(" server port   : %s\n", port);
-	printf(" server state  : %s\n", serverState(clnt_cnt));
-	printf(" max connection: %d\n", MAX_CLNT);
-	printf(" ----- log -----\n\n");
+	printf(" max number of clients: %d\n", MAX_CLNT);
+	printf(" -----------------\n\n");
 }
 
 void* recv_msg(void* arg) {

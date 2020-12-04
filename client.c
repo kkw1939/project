@@ -15,7 +15,7 @@ void* recv_msg(void* arg);
 int poker();
 void menu();
 
-char name[SIZE] = "[USER]";
+char name[SIZE] = "[Player]";
 char msg_form[SIZE];
 char serv_time[SIZE];
 char msg[BUFSIZE];
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
 	serv_addr.sin_port = htons(atoi(argv[2]));
 
 	if(connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) == -1) {
-		printf("connect error");
+		perror("connect error");
 		exit(1);
 	}
 
@@ -65,19 +65,13 @@ void* send_msg(void* arg) {
 	char* who = NULL;
 	char temp[BUFSIZE];
 
-	printf(" >> start chat ...\n");
+	printf(" >> start game ...\n");
 	sprintf(myInfo, "%s's join. IP_%s\n", name, clnt_ip);
 	write(sock, myInfo, strlen(myInfo));
 
 	while(1) {
 		fgets(msg, BUFSIZE, stdin);
 
-		/* quit */
-		if(!strcmp(msg, "q\n") || !strcmp(msg, "Q\n")) {
-			close(sock);
-			exit(0);
-		}
-		
 		sprintf(name_msg, "%s %s", name, msg);
 		write(sock, name_msg, strlen(name_msg));
 		}
@@ -86,24 +80,25 @@ void* send_msg(void* arg) {
 
 void* recv_msg(void* arg) {
 	int sock = *((int*)arg);
-	char name_msg[SIZE+BUFSIZE];
+	char msg[SIZE+BUFSIZE];
 	int str_len;
 	
 	while(1) {
-		str_len = read(sock, name_msg, SIZE + BUFSIZE -1);
+		str_len = read(sock, msg, SIZE + BUFSIZE -1);
+		if(!strcmp(msg, "\0")) {
+			close(sock);
+			exit(0);
+		}	
 		if(str_len == -1) return (void*)-1;
-		name_msg[str_len] = 0;
-		fputs(name_msg, stdout);
+		msg[str_len] = 0;
+		fputs(msg, stdout);
 	}
 	return NULL;
 }
 
 void menu() {
 	system("clear");
-	printf(" pocker game chatting client \n");
-	printf(" server port : %s\n", serv_port);
-	printf(" client IP   : %s\n", clnt_ip);
-	printf(" chat name   : %s\n", name);
-	printf(" server time : %s\n", serv_time);
-	printf(" exit : q or Q\n\n");
+	printf("Welcome to pocker game \n");
+	printf(" server port number : %s\n", serv_port);
+	printf("--------------------------------\n\n");
 }
