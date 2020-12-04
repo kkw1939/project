@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <signal.h>
 #include <time.h>
 #include <math.h>
 
@@ -508,14 +509,51 @@ void royal_straight_flush(int k){
 			result_p2=9;
 	}
 }
+void* recv_choose();
+void betting() {
+	int i;
+	srand(time(NULL));
+	int who = rand() % clnt_cnt;
+	char msg1[BUFSIZ], msg[BUFSIZ], msg2[BUFSIZ];
+	char *buf, *input;
+	sprintf(msg, "Player %d betting first.\n Choose betting.\n1.Check 2. Raise 3. Die\n", who+1);
+	for(i=0;i<clnt_cnt; i++) {
+		write(clnt_socks[i], msg, strlen(msg));
+	}
+	read(clnt_socks[who], msg1, BUFSIZ);
+	printf("%s\n", msg1);
+	buf = strtok(msg1, " ");
+	input = strtok(NULL, "\n\0");
+	printf("%s\n", input);
+	if(!strcmp(input, "1")) {
+		sprintf(msg2, "You choose check!!\n");
+		write(clnt_socks[who], msg2, strlen(msg));
+	}
+	else if(!strcmp(input, "2")) {
+		sprintf(msg2, "You choose raise!!\n");
+		write(clnt_socks[who], msg2, strlen(msg));
+	}
+	else if(!strcmp(input, "3")) {
+		sprintf(msg2, "You choose die ...\n");
+		write(clnt_socks[who], msg2, strlen(msg));
+		//die(who);
+	}
 
+
+	return;
+}
+
+void f(int signum) {
+}
 void chatting(){
 	int i;
 	char* msg = "\nTalk in 1 minute..\n";
 	for(i=0;i<clnt_cnt;i++) {
 		write(clnt_socks[i], msg, strlen(msg));
 	}
-//	sleep(60);
+	sleep(3);
+	//signal(SIGINT, f);
+	return;
 }
 int poker(void){
 	int i,suit_num1,suit_num2;
@@ -583,6 +621,7 @@ int poker(void){
 		write(clnt_socks[1], msg, strlen(msg));
 		printf("\n");
 		chatting();
+		betting();
 		//getchar();
 	}
 	printf("\n");
@@ -830,7 +869,7 @@ int main(int argc, char *argv[]) {
 		pthread_mutex_lock(&mutx);
 		clnt_socks[clnt_cnt++] = clnt_sock;
 		pthread_mutex_unlock(&mutx);
-		
+		pthread_create(&rcv_thread, NULL, recv_choose, (void*)&clnt_sock);	
 		pthread_create(&snd_thread, NULL, send_clnt, (void*)&clnt_sock);
 		pthread_create(&t_id, NULL, handle_clnt, (void*)&clnt_sock);
 		pthread_detach(t_id);
@@ -873,8 +912,9 @@ void *handle_clnt(void *arg) {
 void send_msg(char* msg, int len) {
 	int i;
 	pthread_mutex_lock(&mutx);
-	for(i = 0; i < clnt_cnt; i++) 
+	for(i = 0; i < clnt_cnt; i++) {
 		write(clnt_socks[i], msg, len);
+	}
 	pthread_mutex_unlock(&mutx);
 }
 char* serverState(int count) {
@@ -893,6 +933,35 @@ void menu(char port[]) {
 	printf(" server state  : %s\n", serverState(clnt_cnt));
 	printf(" max connection: %d\n", MAX_CLNT);
 	printf(" ----- log -----\n\n");
+}
+void* recv_choose(void* arg) {
+	int sock = *((int*)arg);
+	char name_msg[BUFSIZ];
+	char *buf;
+	int str_len;
+	char *choose;
+
+	while(1) {
+		str_len = read(sock, name_msg, sizeof(char));
+		buf = strtok(name_msg, " ");
+		choose = strtok(name_msg, "\0");
+		if(str_len == -1) return (void*)-1;
+		if(choose == "1") {
+			printf("check!!\n");
+		}
+		else if(choose == "2") {
+			printf("raise!!\n");
+		}
+		else if(choose == "3") {
+			printf("die!!\n");
+			exit(1);
+		}
+		else {
+			printf("wrong number.\n");
+		}
+		fputs(name_msg, stdout);
+	}
+	return NULL;
 }
 
 void* recv_msg(void* arg) {
