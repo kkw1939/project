@@ -647,7 +647,7 @@ void result(){
 				result_value = 2;
 			else {
 				num1 = player1[5].value;
-				num2 = player1[2].value;
+				num2 = player2[5].value;
 				if(num1>num2)
 					 result_value = 1;
 				else if(num1<num2)
