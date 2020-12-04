@@ -6,7 +6,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
-#include <signal.h>
 #include <time.h>
 #include <math.h>
 
@@ -42,6 +41,8 @@ int result_p1=0;
 int result_p2=0;
 int num1,num2;
 char suit1,suit2;
+card personal_card1[2],personal_card2[2];
+int money1=10000,money2=10000;
 
 int check(int k){
 	if(cards[k].value<0)
@@ -70,9 +71,11 @@ void give_card(int k,int a){
 	}
 	if(k==1){
 		player1[a] = cards[rand_num];
+		personal_card1[a] = cards[rand_num];
 	}
 	else if(k==2){
 		player2[a] = cards[rand_num];
+		personal_card2[a] = cards[rand_num];
 	}
 	else if(k==3){
 		common_card[a] = cards[rand_num];
@@ -509,51 +512,14 @@ void royal_straight_flush(int k){
 			result_p2=9;
 	}
 }
-void* recv_choose();
-void betting() {
-	int i;
-	srand(time(NULL));
-	int who = rand() % clnt_cnt;
-	char msg1[BUFSIZ], msg[BUFSIZ], msg2[BUFSIZ];
-	char *buf, *input;
-	sprintf(msg, "Player %d betting first.\n Choose betting.\n1.Check 2. Raise 3. Die\n", who+1);
-	for(i=0;i<clnt_cnt; i++) {
-		write(clnt_socks[i], msg, strlen(msg));
-	}
-	read(clnt_socks[who], msg1, BUFSIZ);
-	printf("%s\n", msg1);
-	buf = strtok(msg1, " ");
-	input = strtok(NULL, "\n\0");
-	printf("%s\n", input);
-	if(!strcmp(input, "1")) {
-		sprintf(msg2, "You choose check!!\n");
-		write(clnt_socks[who], msg2, strlen(msg));
-	}
-	else if(!strcmp(input, "2")) {
-		sprintf(msg2, "You choose raise!!\n");
-		write(clnt_socks[who], msg2, strlen(msg));
-	}
-	else if(!strcmp(input, "3")) {
-		sprintf(msg2, "You choose die ...\n");
-		write(clnt_socks[who], msg2, strlen(msg));
-		//die(who);
-	}
 
-
-	return;
-}
-
-void f(int signum) {
-}
 void chatting(){
 	int i;
 	char* msg = "\nTalk in 1 minute..\n";
 	for(i=0;i<clnt_cnt;i++) {
 		write(clnt_socks[i], msg, strlen(msg));
 	}
-	sleep(3);
-	//signal(SIGINT, f);
-	return;
+//	sleep(60);
 }
 int poker(void){
 	int i,suit_num1,suit_num2;
@@ -604,25 +570,6 @@ int poker(void){
 		four_card(i);
 		straight_flush(i);
 		royal_straight_flush(i);
-	}
-	for(i=0;i<7;i++){
-	       	char msg[BUFSIZ];
-		char suit[BUFSIZ];
-		sprintf(msg, "%d", player1[i].value);
-		sprintf(suit, "%c", player1[i].suit);
-		strcat(msg, suit);	
-		printf("player1 : %d%c ",player1[i].value,player1[i].suit);
-		write(clnt_socks[0], msg, strlen(msg)); 
-		
-		printf("player2 : %d%c ",player2[i].value,player2[i].suit);
-		sprintf(msg, "%d", player2[i].value);
-		sprintf(suit, "%c", player2[i].suit);
-		strcat(msg, suit);
-		write(clnt_socks[1], msg, strlen(msg));
-		printf("\n");
-		chatting();
-		betting();
-		//getchar();
 	}
 	printf("\n");
 	/*for(i=0;i<7;i++){
@@ -679,141 +626,146 @@ int poker(void){
 	case 9 : printf("player2 : %c royal straight flush\n",suit2);
 		break;
 	}
+}
 
+void result(){
+	int suit_num1,suit_num2,result_value,i;
+	char msg1[BUFSIZE] = "Congratulations! player1 win\n";
+	char msg2[BUFSIZE] = "Congratulations! player2 win\n";
 	if(result_p1>result_p2){
-		printf("player1 win!\n");
+		result_value = 1;
 	}
 	else if(result_p1<result_p2){
-		printf("player2 win!\n");
+		 result_value = 2;
 	}
 	else{
 		//if high card
 		if(result_p1==0){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else {
 				num1 = player1[5].value;
 				num2 = player1[2].value;
 				if(num1>num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else if(num1<num2)
-					printf("player2 win\n");
+					result_value = 2;
 				else{
 					suit_num1 = check_suit(suit1);
 					suit_num2 = check_suit(suit2);
 					if(suit_num1>suit_num2)
-						printf("player1 win\n");
+						 result_value = 1;
 					else 
-						printf("player2 win\n");
+						result_value = 2;
 				}
 			}
 		}
 		//if one pair
 		else if(result_p1==1){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else {
 				suit_num1 = check_suit(suit1);
 				suit_num2 = check_suit(suit2);
 				if(suit_num1>suit_num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else 
-					printf("player2 win\n");
+					result_value = 2;
 			}
 		}
 		//if two pair
 		else if(result_p1==2){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else {
 				suit_num1 = check_suit(suit1);
 				suit_num2 = check_suit(suit2);
 				if(suit_num1>suit_num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else 
-					printf("player2 win\n");
+					result_value = 2;
 			}
 		}
 		//if triple
 		else if(result_p1==3){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else {
 				suit_num1 = check_suit(suit1);
 				suit_num2 = check_suit(suit2);
 				if(suit_num1>suit_num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else 
-					printf("player2 win\n");
+					result_value = 2;
 			}
 		}
 
 		//if straight
 		else if(result_p1==4){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else{
 				suit_num1 = check_suit(suit1);
 				suit_num2 = check_suit(suit2);
 				if(suit_num1>suit_num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else 
-					printf("player2 win\n");
+					result_value = 2;
 			}
 
 		}
 		//if flush
 		else if(result_p1==5){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else{
 				suit_num1 = check_suit(suit1);
 				suit_num2 = check_suit(suit2);
 				if(suit_num1>suit_num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else 
-					printf("player2 win\n");
+					result_value = 2;
 			}
 		}
 		//if full house
 		else if(result_p1==6){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else 
-				printf("player2 win\n");
+				result_value = 2;
 		}
 		//if four card
 		else if(result_p1==7){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else 
-				printf("player2 win\n");
+				result_value = 2;
 		}
 		//if straight_flush
 		else if(result_p1==8){
 			if(num1>num2)
-				printf("player1 win\n");
+				 result_value = 1;
 			else if(num1<num2)
-				printf("player2 win\n");
+				result_value = 2;
 			else{
 				suit_num1 = check_suit(suit1);
 				suit_num2 = check_suit(suit2);
 				if(suit_num1>suit_num2)
-					printf("player1 win\n");
+					 result_value = 1;
 				else 
-					printf("player2 win\n");
+					result_value = 2;
 			}
 		}
 		//if royal straight flush
@@ -821,15 +773,78 @@ int poker(void){
 			suit_num1 = check_suit(suit1);
 			suit_num2 = check_suit(suit2);
 			if(suit_num1>suit_num2)
-				printf("player1 win\n");
+				result_value = 1;
 			else 
-				printf("player2 win\n");
+				result_value = 2;
 		}
+	}
+	char msg3[BUFSIZ],msg4[BUFSIZ];
+	if(result_value==1){
+		sprintf(msg3,"%d\n",money1);
+		sprintf(msg4,"%d\n",money2);
+		for(i=0;i<2;i++){
+			write(clnt_socks[i],msg1,strlen(msg1));
+			write(clnt_socks[i],msg3,strlen(msg3));
+			write(clnt_socks[i],msg4,strlen(msg4));
+
+		}
+
+	}
+	else{
+		sprintf(msg3,"%d\n",money1);
+		sprintf(msg4,"%d\n",money2);
+		for(i=0;i<2;i++){
+                        write(clnt_socks[i],msg2,strlen(msg2));
+			write(clnt_socks[i],msg3,strlen(msg3));
+                        write(clnt_socks[i],msg4,strlen(msg4));
+                }
 	}
 }
 
+void check_personal_card(){
+	int i;
+	 for(i=0;i<2;i++){
+                char msg[BUFSIZ];
+                char suit[BUFSIZ];
+         sprintf(msg, "%d", personal_card1[i].value);
+         sprintf(suit, "%c\n", personal_card1[i].suit);
+         strcat(msg, suit);
+         write(clnt_socks[0], msg, strlen(msg));
 
+         sprintf(msg, "%d", personal_card2[i].value);
+         sprintf(suit, "%c\n", personal_card2[i].suit);
+         strcat(msg, suit);
+         write(clnt_socks[1], msg, strlen(msg));
+        }
 
+}
+
+void send_card(){
+	int i;
+	for(i=0;i<5;i++){
+                char msg[BUFSIZ];
+                char suit[BUFSIZ];
+                sprintf(msg, "%d",common_card[i].value);
+                sprintf(suit, "%c", common_card[i].suit);
+                strcat(msg, suit);
+                printf("player1 : %d%c ",player1[i].value,player1[i].suit);
+                write(clnt_socks[0], msg, strlen(msg));
+
+                printf("player2 : %d%c ",player2[i].value,player2[i].suit);
+                sprintf(msg, "%d", common_card[i].value);
+                sprintf(suit, "%c", common_card[i].suit);
+                strcat(msg, suit);
+                write(clnt_socks[1], msg, strlen(msg));
+                printf("\n");
+                chatting();
+                //getchar();
+        }
+	for(i=0;i<2;i++){
+		printf("player1 : %d%c" , player1[i+5].value,player1[i+5].suit);
+		printf("player1 : %d%c\n", player2[i+5].value,player2[i+5].suit);
+	}
+
+}
 
 int main(int argc, char *argv[]) {
 	int serv_sock, clnt_sock;
@@ -869,18 +884,28 @@ int main(int argc, char *argv[]) {
 		pthread_mutex_lock(&mutx);
 		clnt_socks[clnt_cnt++] = clnt_sock;
 		pthread_mutex_unlock(&mutx);
-		pthread_create(&rcv_thread, NULL, recv_choose, (void*)&clnt_sock);	
+		
 		pthread_create(&snd_thread, NULL, send_clnt, (void*)&clnt_sock);
 		pthread_create(&t_id, NULL, handle_clnt, (void*)&clnt_sock);
 		pthread_detach(t_id);
 		printf(" Connected client IP : %s ", inet_ntoa(clnt_adr.sin_addr));
 		printf(" chatter (%d/100)\n", clnt_cnt);
 		if(clnt_cnt == 2) {
-			sleep(3);
-			char start[BUFSIZE] = "Game start!\n Check your card..\n We will open the next card 10s later..\n";
-			send_msg(start, strlen(start));
-			sleep(10);
-			poker();
+			
+				sleep(3);
+				poker();
+				char msg1[BUFSIZE] = "Game start!\n Check your card..\n";
+				char msg2[BUFSIZE] = "We will open the next card 10s later..\n";
+				send_msg(msg1, strlen(msg1));
+				check_personal_card();
+				send_msg(msg2, strlen(msg2));
+				send_card();
+				char msg3[BUFSIZE]  = "Here's result\n";
+				send_msg(msg3,strlen(msg3));
+				result();
+				char msg4[BUFSIZE] = "Choose menu 1. Keep playing 2.Quit\n";
+				send_msg(msg4,strlen(msg4));
+			
 		}
 	}
 	close(serv_sock);
@@ -912,9 +937,8 @@ void *handle_clnt(void *arg) {
 void send_msg(char* msg, int len) {
 	int i;
 	pthread_mutex_lock(&mutx);
-	for(i = 0; i < clnt_cnt; i++) {
+	for(i = 0; i < clnt_cnt; i++) 
 		write(clnt_socks[i], msg, len);
-	}
 	pthread_mutex_unlock(&mutx);
 }
 char* serverState(int count) {
@@ -933,35 +957,6 @@ void menu(char port[]) {
 	printf(" server state  : %s\n", serverState(clnt_cnt));
 	printf(" max connection: %d\n", MAX_CLNT);
 	printf(" ----- log -----\n\n");
-}
-void* recv_choose(void* arg) {
-	int sock = *((int*)arg);
-	char name_msg[BUFSIZ];
-	char *buf;
-	int str_len;
-	char *choose;
-
-	while(1) {
-		str_len = read(sock, name_msg, sizeof(char));
-		buf = strtok(name_msg, " ");
-		choose = strtok(name_msg, "\0");
-		if(str_len == -1) return (void*)-1;
-		if(choose == "1") {
-			printf("check!!\n");
-		}
-		else if(choose == "2") {
-			printf("raise!!\n");
-		}
-		else if(choose == "3") {
-			printf("die!!\n");
-			exit(1);
-		}
-		else {
-			printf("wrong number.\n");
-		}
-		fputs(name_msg, stdout);
-	}
-	return NULL;
 }
 
 void* recv_msg(void* arg) {
